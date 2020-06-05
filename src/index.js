@@ -10,9 +10,13 @@ require('dotenv').config()
 const {
 	db,
 	findDosenByUsername,
+	findMahasiswaByUsername,
 	findDosenByID,
 	findMahasiswaByID,
-	findMahasiswaByUsername,
+	getDosenByProdiID,
+	getGenders,
+	getProdi,
+	getFakultas,
 } = require('./db')
 const dbOption = require('./dbOption')
 
@@ -151,6 +155,46 @@ app.get('/getUser', (req, res) => {
 		return res.send(req.user)
 	}
 	return res.json(null)
+})
+
+app.get('/genders', (req, res) => {
+	getGenders((err, result) => {
+		if (err) {
+			return res.status(502).send({message: 'upss, ada yang salah'})
+		}
+
+		return res.send(result)
+	})
+})
+
+app.get("/prodi", (req, res) => {
+	getProdi((err, result) => {
+		if (err) {
+			return res.status(502).send({message: 'upss, ada yang salah'})
+		}
+
+		return res.send(result)
+	})
+})
+
+app.get('/fakultas', (req, res) => {
+	getFakultas((err, result) => {
+		if (err) {
+			return res.status(502).send({message: 'upss, ada yang salah'})
+		}
+
+		return res.send(result)
+	})
+})
+
+app.get('/dosen/:prodiID', (req, res) => {
+	getDosenByProdiID(req.params.prodiID, (err, result) => {
+		if (err) {
+			return res.status(502).send({message: 'upss, ada yang salah'})
+		}
+
+		return res.send(result)
+	})
 })
 
 app.listen(process.env.PORT, () => {
