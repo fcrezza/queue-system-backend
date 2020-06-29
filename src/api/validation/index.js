@@ -1,6 +1,6 @@
 const {object, string, number} = require('yup')
 
-const {getFakultas, getGenders, getProdi} = require('./db')
+const {getFakultas, getGenders, getProdi} = require('../model')
 
 function fetchFakultas(callback) {
 	return getFakultas((error, result) => {
@@ -47,7 +47,6 @@ function generateDosenSchema(genders, fakultas, callback) {
 	callback(schema)
 }
 
-
 function generateMahasiswaSchema(genders, prodi, callback) {
 	const schema = object().shape({
 		nim: number().required(),
@@ -61,7 +60,7 @@ function generateMahasiswaSchema(genders, prodi, callback) {
 		gender: number()
 			.oneOf(genders.map(({id}) => id))
 			.required(),
-		semester: number().required()
+		semester: number().required(),
 	})
 
 	callback(schema)
