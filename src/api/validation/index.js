@@ -1,61 +1,48 @@
 const {object, string, number} = require('yup')
+const {getFaculties, getGenders, getStudyPrograms} = require('../model')
 
-const {getFakultas, getGenders, getProdi} = require('../model')
-
-function fetchFakultas(callback) {
-	return getFakultas((error, result) => {
-		if (error) {
-			console.log(error)
-		}
-		callback(result)
-	})
+async function fetchFaculties() {
+	const faculties = await getFaculties()
+	return faculties
 }
 
-function fetchProdi(callback) {
-	return getProdi((error, result) => {
-		if (error) {
-			console.log(error)
-		}
-		callback(result)
-	})
+async function fetchStudyPrograms() {
+	const studyPrograms = await getStudyPrograms()
+	return studyPrograms
 }
 
-function fetchGender(callback) {
-	getGenders((error, result) => {
-		if (error) {
-			console.log(error)
-		}
-		callback(result)
-	})
+async function fetchGenders() {
+	const genders = await getGenders()
+	return genders
 }
 
-function generateDosenSchema(genders, fakultas, callback) {
+function generateProfessorSchema(genders, faculties) {
 	const schema = object().shape({
 		nip: number().required(),
 		username: string().required(),
 		password: string().min(8).required(),
 		fullname: string().required(),
-		alamat: string().required(),
-		fakultas: number()
-			.oneOf(fakultas.map(({id}) => id))
+		address: string().required(),
+		faculty: number()
+			.oneOf(faculties.map(({id}) => id))
 			.required(),
 		gender: number()
 			.oneOf(genders.map(({id}) => id))
 			.required(),
 	})
 
-	callback(schema)
+	return schema
 }
 
-function generateMahasiswaSchema(genders, prodi, callback) {
+function generateStudentSchema(genders, studyPrograms) {
 	const schema = object().shape({
 		nim: number().required(),
 		username: string().required(),
 		password: string().min(8).required(),
 		fullname: string().required(),
-		alamat: string().required(),
-		prodi: number()
-			.oneOf(prodi.map(({id}) => id))
+		address: string().required(),
+		study: number()
+			.oneOf(studyPrograms.map(({id}) => id))
 			.required(),
 		gender: number()
 			.oneOf(genders.map(({id}) => id))
@@ -63,23 +50,21 @@ function generateMahasiswaSchema(genders, prodi, callback) {
 		semester: number().required(),
 	})
 
-	callback(schema)
+	return schema
 }
 
-function dosenSchema(callback) {
-	fetchGender((gender) => {
-		fetchFakultas((fakultas) => {
-			generateDosenSchema(gender, fakultas, callback)
-		})
-	})
+async function professorSchema() {
+	const genders = await fetchGenders()
+	const faculties = await fetchFaculties()
+	const schema = generateProfessorSchema(genders, faculties)
+	return schema
 }
 
-function mahasiswaSchema(callback) {
-	fetchGender((gender) => {
-		fetchProdi((prodi) => {
-			generateMahasiswaSchema(gender, prodi, callback)
-		})
-	})
+async function studentSchema() {
+	const genders = await fetchGenders()
+	const studyPrograms = await fetchStudyPrograms()
+	const schema = generateStudentSchema(genders, studyPrograms)
+	return schema
 }
 
-module.exports = {dosenSchema, mahasiswaSchema}
+module.exports = {professorSchema, studentSchema}

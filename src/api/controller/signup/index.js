@@ -1,11 +1,11 @@
-const dosenSignup = require('./dosenSignup')
-const mahasiswaSignup = require('./mahasiswaSignup')
+const professorSignup = require('./professorSignup')
+const studentSignup = require('./studentSignup')
 
 function signup(req, res, next) {
-	if (req.body.role === 'dosen') {
-		dosenSignup(req, res, next)
+	if (req.body.role === 'professor') {
+		professorSignup(req, res, next)
 	} else {
-		mahasiswaSignup(req, res, next)
+		studentSignup(req, res, next)
 	}
 }
 

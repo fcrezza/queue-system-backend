@@ -2,28 +2,40 @@ const mysql = require('mysql')
 const dbOption = require('../dbOption')
 
 const db = mysql.createConnection(dbOption)
-//use this
-function findDosenByUsername(username, callback) {
-	db.query(
-		'select id, username, password from dosen where username = ?',
-		username,
-		(err, results) => {
-			callback(err, results[0])
-		},
-	)
+// use this
+function findProfessorByUsername(username) {
+	let query = 'select id, username, password from dosen where username = ?'
+	query = mysql.format(query, username)
+
+	return new Promise((resolve, reject) => {
+		db.query(query, (error, results) => {
+			if (error) {
+				reject(error)
+				return
+			}
+
+			resolve(results[0])
+		})
+	})
 }
 // use this
-function findMahasiswaByUsername(username, callback) {
-	db.query(
-		'select id, username, password from mahasiswa where username = ?',
-		username,
-		(err, results) => {
-			callback(err, results[0])
-		},
-	)
+function findStudentByUsername(username) {
+	let query = 'select id, username, password from mahasiswa where username = ?'
+	query = mysql.format(query, username)
+
+	return new Promise((resolve, reject) => {
+		db.query(query, (error, results) => {
+			if (error) {
+				reject(error)
+				return
+			}
+
+			resolve(results[0])
+		})
+	})
 }
 // use this
-function findDosenByID(id) {
+function findProfessorByID(id) {
 	let query =
 		'select dosen.id, dosen.namaLengkap fullname, dosen.nip,dosen.username,dosen.alamat as address,dosen.avatar,dosen.status,fakultas.id as facultyID,fakultas.nama as facultyName,gender.id genderID,gender.nama genderName from dosen left join fakultas on dosen.idFakultas=fakultas.id left join gender on gender.id=dosen.idGender where dosen.id = ?'
 	query = mysql.format(query, [id])
@@ -58,7 +70,7 @@ function findDosenByID(id) {
 	})
 }
 // use this
-function findMahasiswaByID(id) {
+function findStudentByID(id) {
 	let query =
 		'select mahasiswa.id, mahasiswa.namaLengkap as fullname, mahasiswa.nim,mahasiswa.username,mahasiswa.alamat as address,mahasiswa.avatar,mahasiswa.semester, prodi.id as studyID,prodi.nama as studyName,gender.id as genderID,gender.nama as genderName, mahasiswa.idDosen as professorID from mahasiswa left join prodi on mahasiswa.idProdi=prodi.id left join gender on gender.id=mahasiswa.idGender where mahasiswa.id = ?'
 	query = mysql.format(query, id)
@@ -87,77 +99,138 @@ function findMahasiswaByID(id) {
 	})
 }
 // use this
-function getGenders(callback) {
-	db.query('select * from gender', (err, results) => {
-		callback(err, results)
-	})
-}
-// use this
-function getProdi(callback) {
-	db.query('select * from prodi', (err, results) => {
-		callback(err, results)
-	})
-}
-// use this
-function getFakultas(callback) {
-	db.query('select * from fakultas', (err, results) => {
-		callback(err, results)
-	})
-}
-// use this
-function getDosenByProdiID(prodiID, callback) {
-	db.query(
-		'SELECT dosen.id, dosen.namaLengkap, dosen.avatar, fakultas.nama as fakultas from dosen left join fakultas on dosen.idFakultas = fakultas.id left join prodi on fakultas.id = prodi.idFakultas where prodi.id = ? GROUP by dosen.id',
-		prodiID,
-		(err, results) => {
-			callback(err, results)
-		},
-	)
-}
+function getGenders() {
+	return new Promise((resolve, reject) => {
+		db.query('select * from gender', (error, results) => {
+			if (error) {
+				reject(error)
+				return
+			}
 
-function checkUserByUsername(role, username, callback) {
-	if (role === 'mahasiswa') {
+			resolve(results)
+		})
+	})
+}
+// use this
+function getStudyPrograms() {
+	return new Promise((resolve, reject) => {
+		db.query('select * from prodi', (error, results) => {
+			if (error) {
+				reject(error)
+				return
+			}
+
+			resolve(results)
+		})
+	})
+}
+// use this
+function getFaculties() {
+	return new Promise((resolve, reject) => {
+		db.query('select * from fakultas', (error, results) => {
+			if (error) {
+				reject(error)
+				return
+			}
+
+			resolve(results)
+		})
+	})
+}
+// use this
+function getProfessorsByStudyID(studyID) {
+		const query =
+	'SELECT dosen.id, dosen.namaLengkap fullname, dosen.avatar, fakultas.nama as faculty from dosen left join fakultas on dosen.idFakultas = fakultas.id left join prodi on fakultas.id = prodi.idFakultas where prodi.id = ? GROUP by dosen.id'
+
+	return new Promise((resolve, reject) => {
+		db.query(query, studyID, (error, results) => {
+			if (error) {
+				reject(error)
+				return
+			} 
+
+			resolve(results)
+		})
+	})
+}
+// use this
+function checkUserByUsername(role, username) {
+	const table = role === 'student' ? 'mahasiswa' : 'dosen'
+	let query = 'select username from ?? where username = ?'
+	query = mysql.format(query, [table, username])
+
+	return new Promise((resolve, reject) => {
+		db.query(query, (error, results) => {
+			if (error) {
+				reject(error)
+				return
+			}
+
+			resolve(results[0])
+		})
+	})
+}
+// use this
+function checkUserIdentity(userIdentity, role) {
+	if (role === 'student') {
+		return new Promise((resolve, reject) => {
+			db.query(
+				'select nim from mahasiswa where nim = ?',
+				userIdentity,
+				(error, results) => {
+					if (error) {
+						reject(error)
+						return
+					}
+
+					resolve(results[0])
+				},
+			)
+		})
+	}
+
+	return new Promise((resolve, reject) => {
 		db.query(
-			'select username from mahasiswa where username = ?',
-			username,
-			(err, results) => {
-				callback(err, results)
+			'select nip from dosen where nip = ?',
+			userIdentity,
+			(error, results) => {
+				if (error) {
+					reject(error)
+					return
+				}
+
+				resolve(results[0])
 			},
 		)
-	} else {
-		db.query(
-			'select username from dosen where username = ?',
-			username,
-			(err, results) => {
-				callback(err, results)
-			},
-		)
-	}
+	})
 }
-
-function checkUserByIDNumber(role, id, callback) {
-	if (role === 'mahasiswa') {
-		db.query('select nim from mahasiswa where nim = ?', id, (err, results) => {
-			callback(err, results)
-		})
-	} else {
-		db.query('select nip from dosen where nip = ?', id, (err, results) => {
-			callback(err, results)
-		})
-	}
-}
-
-function addUser(formData, callback) {
+// use this
+function registerUser(formData) {
 	const {role, ...data} = formData
-	if (formData.role === 'dosen') {
-		db.query('insert into dosen set ?', data, (error, results, _fields) => {
-			callback(error)
-		})
-	} else {
-		db.query('insert into mahasiswa set ?', data, (error, results, _fields) => {
-			callback(error, results)
+
+	if (role === 'professor') {
+		return new Promise((resolve, reject) => {
+			db.query('insert into dosen set ?', data, (error) => {
+				if (error) {
+					reject(error)
+					return
+				}
+
+				resolve()
+			})
 		})
 	}
+
+	return new Promise((resolve, reject) => {
+		db.query('insert into mahasiswa set ?', data, (error) => {
+			if (error) {
+				reject(error)
+				return
+			}
+
+			resolve()
+		})
+	})
 }
 
 function getProdiByID(id, callback) {
@@ -282,9 +355,9 @@ function getDosenInfoByID(id, callback) {
 }
 
 function getUserPassword(data) {
-	const {id, role} = data
+	const {id, user} = data
 	let query = 'select password from ?? where id = ?'
-	query = mysql.format(query, [role, id])
+	query = mysql.format(query, [user, id])
 
 	return new Promise((resolve, reject) => {
 		db.query(query, (error, result) => {
@@ -298,9 +371,9 @@ function getUserPassword(data) {
 }
 
 function modifyPassword(data) {
-	const {id, role, newPassword} = data
+	const {id, user, newPassword} = data
 	let query = 'update ?? set password = ? where id = ?'
-	query = mysql.format(query, [role, newPassword, id])
+	query = mysql.format(query, [user, newPassword, id])
 
 	return new Promise((resolve, reject) => {
 		db.query(query, (error) => {
@@ -314,11 +387,11 @@ function modifyPassword(data) {
 	})
 }
 
-function modifyMahasiswaProfile(data, callback) {
+function modifyMahasiswaProfile(data) {
 	const {id, ...props} = data
 	let query = 'update mahasiswa set ? where id = ?'
 	query = mysql.format(query, [props, id])
-	
+
 	return new Promise((resolve, reject) => {
 		db.query(query, (error) => {
 			if (error) {
@@ -347,7 +420,7 @@ function modifyDosenProfile(data) {
 	})
 }
 
-function getListMahasiswa(id) {
+function getListStudentsByProfessorID(id) {
 	let query =
 		'select mahasiswa.id, mahasiswa.avatar, prodi.nama as study, mahasiswa.namaLengkap as fullname from mahasiswa left join prodi on mahasiswa.idProdi = prodi.id where idDosen = ?'
 	query = mysql.format(query, id)
@@ -383,19 +456,19 @@ function getMahasiswaByID(id) {
 
 module.exports = {
 	db,
-	addUser,
-	findDosenByID,
-	findMahasiswaByID,
-	findDosenByUsername,
-	findMahasiswaByUsername,
-	getDosenByProdiID,
+	registerUser,
+	findProfessorByID,
+	findStudentByID,
+	findProfessorByUsername,
+	findStudentByUsername,
+	getProfessorsByStudyID,
 	checkUserByUsername,
-	checkUserByIDNumber,
+	checkUserIdentity,
 	getGenders,
-	getProdi,
+	getStudyPrograms,
+	getFaculties,
 	updateStatusDosen,
 	getProdiByID,
-	getFakultas,
 	getFakultasByID,
 	getAntrianByDosenID,
 	updateAntrianStatusByMahasiswaID,
@@ -407,6 +480,6 @@ module.exports = {
 	modifyPassword,
 	modifyMahasiswaProfile,
 	modifyDosenProfile,
-	getListMahasiswa,
+	getListStudentsByProfessorID,
 	getMahasiswaByID,
 }

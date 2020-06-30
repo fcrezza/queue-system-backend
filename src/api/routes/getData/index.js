@@ -1,33 +1,26 @@
 const router = require('express').Router()
 const {
-	fetchFakultas,
-	fetchFakultasByID,
+	fetchFaculties,
 	fetchGenders,
-	fetchProdi,
+	fetchStudyPrograms,
 	fetchUser,
-	fetchProdiByID,
-	fetchDosenByID,
-	getDosenByProdi,
+	fetchProfessorByID,
+	fetchProfessorsByStudyID,
 	fetchAntrianByDosenID,
-	fetchGenderByID,
 	fetchDosenInfoByID,
-	fetchMahasiswaProfile,
 	fetchMahasiswaByID,
-	fetchListMahasiswaByDosenID
+	fetchListStudentsByProfessorID
 } = require('../../controller/getData')
 
 router.get('/getUser', fetchUser)
 router.get('/genders', fetchGenders)
-router.get('/prodi', fetchProdi)
-// router.get('/prodi/:id', fetchProdiByID)
-router.get('/fakultas', fetchFakultas)
-// router.get('/fakultas/:id', fetchFakultasByID)
-router.get('/dosen/:prodiID', getDosenByProdi)
-router.get('/getDosen/:id', fetchDosenByID)
-// router.get('/gender/:id', fetchGenderByID)
+router.get('/studyPrograms', fetchStudyPrograms)
+router.get('/faculties', fetchFaculties)
+router.get('/professorsByStudyProgram/:prodiID', fetchProfessorsByStudyID)
+router.get('/professor/:id', fetchProfessorByID)
 router.get('/antrian/:dosenID', fetchAntrianByDosenID)
 router.get('/dosenInfo/:id', fetchDosenInfoByID)
-router.get('/listMahasiswa/:id', fetchListMahasiswaByDosenID)
+router.get('/listStudents/:professorID', fetchListStudentsByProfessorID)
 router.get('/mahasiswa/:id', fetchMahasiswaByID)
 
 module.exports = router

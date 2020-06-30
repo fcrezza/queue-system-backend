@@ -1,8 +1,11 @@
 const router = require('express').Router()
-
-const {checkUsername, checkUserByID} = require('../../controller/checkData')
-
+const {
+	checkUsername,
+	checkUserByIdentity,
+} = require('../../controller/checkData')
+// use this
 router.post('/checkUsername', checkUsername)
-router.post('/checkUserById', checkUserByID)
+// use this
+router.post('/checkUserByIdentity', checkUserByIdentity)
 
 module.exports = router

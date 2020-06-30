@@ -12,10 +12,10 @@ require('dotenv').config()
 const {
 	db,
 	cancelBimbingan,
-	findDosenByUsername,
-	findMahasiswaByUsername,
-	findDosenByID,
-	findMahasiswaByID,
+	findProfessorByUsername,
+	findStudentByUsername,
+	findProfessorByID,
+	findStudentByID,
 	updateStatusDosen,
 	updateAntrianStatusByMahasiswaID,
 	getAntrianByDosenID,
@@ -32,51 +32,61 @@ const session = expressSession({
 	saveUninitialized: false,
 })
 passport.use(
-	'login-dosen',
-	new LocalStrategy((username, password, done) => {
-		findDosenByUsername(username, (err, dosen) => {
-			if (err) {
-				return done(err)
-			}
-			if (!dosen) {
-				return done(null, false, {
+	'professorLogin',
+	new LocalStrategy(async (username, password, done) => {
+		try {
+			const professor = await findProfessorByUsername(username)
+			if (!professor) {
+				done(null, false, {
 					message: `Tidak ada akun dengan username ${username}`,
 				})
+				return
 			}
-			if (!bcrypt.compareSync(password, dosen.password)) {
-				return done(null, false, {
+
+			const matchPassword = await bcrypt.compare(password, professor.password)
+			if (!matchPassword) {
+				done(null, false, {
 					message: 'Password yang kamu masukan salah',
 				})
+				return
 			}
-			return done(null, {
-				...dosen,
-				role: 'dosen',
+
+			done(null, {
+				...professor,
+				role: 'professor',
 			})
-		})
+		} catch (error) {
+			done(error)
+		}
 	}),
 )
 passport.use(
-	'login-mahasiswa',
-	new LocalStrategy((username, password, done) => {
-		findMahasiswaByUsername(username, (err, mahasiswa) => {
-			if (err) {
-				return done(err)
-			}
-			if (!mahasiswa) {
-				return done(null, false, {
+	'studentLogin',
+	new LocalStrategy(async (username, password, done) => {
+		try {
+			const student = await findStudentByUsername(username)
+			if (!student) {
+				done(null, false, {
 					message: `Tidak ada akun dengan username ${username}`,
 				})
+				return
 			}
-			if (!bcrypt.compareSync(password, mahasiswa.password)) {
-				return done(null, false, {
+
+			const matchPassword = await bcrypt.compare(password, student.password)
+			if (!matchPassword) {
+				done(null, false, {
 					message: 'Password yang kamu masukan salah',
 				})
+				return
 			}
-			return done(null, {
-				...mahasiswa,
-				role: 'mahasiswa',
+
+			done(null, {
+				...student,
+				role: 'student',
 			})
-		})
+		} catch (error) {
+			done(error)
+		}
 	}),
 )
 passport.serializeUser((user, done) => {
@@ -87,19 +97,19 @@ passport.serializeUser((user, done) => {
 })
 passport.deserializeUser(async (user, done) => {
 	const {id, role} = user
-	if (role === 'dosen') {
-		const dosen = await findDosenByID(id)
+	if (role === 'professor') {
+		const professor = await findProfessorByID(id)
 		done(null, {
 			role,
-			...dosen,
+			...professor,
 		})
 		return
 	}
 
-	const mahasiswa = await findMahasiswaByID(id)
+	const student = await findStudentByID(id)
 	done(null, {
 		role,
-		...mahasiswa,
+		...student,
 	})
 })
 app.use(
@@ -123,32 +133,28 @@ app.use('/', api)
 io.on('connection', (socket) => {
 	let professorID = null
 	// change dosen status: only for dosen
-	socket.on('make-me-online', async (id) => {
+	socket.on('makeMeOnline', async (id) => {
 		professorID = id
 		await updateStatusDosen(1, professorID)
-		socket.broadcast.emit('dosenStatus', {id: professorID, status: 1})
+		socket.broadcast.emit('professorStatus', {id: professorID, status: 1})
 	})
 	// get queue: for all user
-	socket.on('getAntrian', async (id) => {
+	socket.on('getQueue', async (id) => {
 		const antrian = await getAntrianByDosenID(id)
-		socket.emit('new-data', antrian, id)
+		socket.emit('newData', antrian, id)
 	})
 	// request bimbingan: only for mahasiswa
-	socket.on('requestBimbingan', async ({id, professorID: profID}) => {
+	socket.on('requestQueue', async ({id, professorID: profID}) => {
 		await requestBimbingan(id, profID)
 		const antrian = await getAntrianByDosenID(profID)
-		socket.emit('new-data', antrian, profID)
-		socket.broadcast.emit('new-data', antrian, profID)
+		socket.emit('newData', antrian, profID)
+		socket.broadcast.emit('newData', antrian, profID)
 	})
 	// call next queue: only for dosen
-	socket.on('next', async (previousActiveUser, nextUser, profID) => {
+	socket.on('nextQueue', async (previousActiveUser, nextUser, profID) => {
 		if (previousActiveUser) {
 			const {id, time} = previousActiveUser
-			await updateAntrianStatusByMahasiswaID(
-				id,
-				time,
-				'completed',
-			)
+			await updateAntrianStatusByMahasiswaID(id, time, 'completed')
 		}
 
 		if (nextUser) {
@@ -157,21 +163,21 @@ io.on('connection', (socket) => {
 		}
 
 		const antrian = await getAntrianByDosenID(profID)
-		socket.emit('new-data', antrian, profID)
-		socket.broadcast.emit('new-data', antrian, profID)
+		socket.emit('newData', antrian, profID)
+		socket.broadcast.emit('newData', antrian, profID)
 	})
 	// out from antrian
-	socket.on('out', async ({time, id, profID}) => {
-		await cancelBimbingan(time, id, profID)
-		const antrian = await getAntrianByDosenID(profID)
-		socket.emit('new-data', antrian, profID)
-		socket.broadcast.emit('new-data', antrian, profID)
+	socket.on('outFromQueue', async ({time, id, professorID}) => {
+		await cancelBimbingan(time, id, professorID)
+		const antrian = await getAntrianByDosenID(professorID)
+		socket.emit('newData', antrian, professorID)
+		socket.broadcast.emit('newData', antrian, professorID)
 	})
 	// disconnect user 'aka' change status dosen: only for dosenn
 	socket.on('disconnect', async () => {
 		if (professorID) {
 			await updateStatusDosen(0, professorID)
-			socket.broadcast.emit('dosenStatus', {id: professorID, status: 0})
+			socket.broadcast.emit('professorStatus', {id: professorID, status: 0})
 		}
 	})
 })

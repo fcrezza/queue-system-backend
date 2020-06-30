@@ -8,9 +8,9 @@ const {
 
 async function changePassword(req, res, next) {
 	const {role, id, oldPassword, newPassword} = req.body
-
+	const user = role === 'student' ? 'mahasiswa' : 'dosen' 
 	try {
-		const {password} = await getUserPassword({role, id})
+		const {password} = await getUserPassword({user, id})
 		const matchOldPassword = await bcrypt.compare(oldPassword, password)
 		if (!matchOldPassword) {
 			res.status(500).json({message: 'Password lama anda tidak cocok'})
@@ -19,7 +19,7 @@ async function changePassword(req, res, next) {
 		const hashPassword = await bcrypt.hash(newPassword, 10)
 		await modifyPassword({
 			id,
-			role,
+			user,
 			newPassword: hashPassword,
 		})
 		res.end()
@@ -28,7 +28,7 @@ async function changePassword(req, res, next) {
 	}
 }
 
-async function changeMahasiswaProfile(req, res, next) {
+async function changeMahasiswaProfile(req, res) {
 	const {
 		study: idProdi,
 		gender: idGender,
@@ -50,11 +50,11 @@ async function changeMahasiswaProfile(req, res, next) {
 		await modifyMahasiswaProfile(data)
 		res.end()
 	} catch(error) {
-		next(error)
+		res.status(502).json({message: 'uppzzz, coba lagi nanti'})
 	}
 }
 
-async function changeDosenProfile(req, res, next) {
+async function changeDosenProfile(req, res) {
 	const {
 		faculty: idFakultas,
 		gender: idGender,
@@ -74,7 +74,7 @@ async function changeDosenProfile(req, res, next) {
 		await modifyDosenProfile(data)
 		res.end()
 	} catch (error) {
-		next(error)
+		res.status(502).json({message: 'uppzzz, coba lagi nanti'})
 	}
 }
 

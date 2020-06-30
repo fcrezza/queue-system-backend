@@ -1,94 +1,69 @@
 const {
-	getProdi,
-	getDosenByProdiID,
+	getStudyPrograms,
+	getProfessorsByStudyID,
 	getGenders,
-	getFakultas,
-	getFakultasByID,
-	getProdiByID,
-	findDosenByID,
+	getFaculties,
+	findProfessorByID,
 	getAntrianByDosenID,
-	getGenderByID,
 	getDosenInfoByID,
-	getListMahasiswa,
+	getListStudentsByProfessorID,
 	getMahasiswaByID
 } = require('../../model')
 
 function fetchUser(req, res) {
 	if (req.isAuthenticated()) {
-		return res.send(req.user)
+		return res.json(req.user)
 	}
 
 	return res.json(null)
 }
 
-function fetchGenders(req, res) {
-	getGenders((err, result) => {
-		if (err) {
-			return res.status(502).send({message: 'upss, ada yang salah'})
-		}
-
-		return res.send(result)
-	})
-}
-
-function fetchProdi(req, res) {
-	getProdi((err, result) => {
-		if (err) {
-			return res.status(502).send({message: 'upss, ada yang salah'})
-		}
-
-		return res.send(result)
-	})
-}
-
-function fetchFakultas(req, res) {
-	getFakultas((err, result) => {
-		if (err) {
-			return res.status(502).send({message: 'upss, ada yang salah'})
-		}
-
-		return res.send(result)
-	})
-}
-
-function getDosenByProdi(req, res) {
-	getDosenByProdiID(req.params.prodiID, (err, result) => {
-		if (err) {
-			return res.status(502).send({message: 'upss, ada yang salah'})
-		}
-
-		return res.send(result)
-	})
-}
-
-function fetchProdiByID(req, res) {
-	getProdiByID(req.params.id, (err, result) => {
-		if (err) {
-			return res.status(502).send({message: 'upps, ada yang salah'})
-		}
-
-		return res.send(result)
-	}) 	
-}
-
-async function fetchDosenByID(req, res, next) {
+async function fetchGenders(req, res) {
 	try {
-		const dosenData = await findDosenByID(req.params.id)
+		const genders = await getGenders()
+		res.json(genders)
+	} catch(error) {
+		res.status(502).send({message: 'upss, ada yang salah'})
+	}
+}
+
+async function fetchStudyPrograms(req, res) {
+	try {
+		const studyPrograms = await getStudyPrograms()
+		res.json(studyPrograms)
+	} catch(error) {
+		res.status(502).send({message: 'upss, ada yang salah'})
+	}
+}
+
+async function fetchFaculties(req, res) {
+	try {
+		const faculties = await getFaculties()
+		res.json(faculties)
+	} catch(error) {
+		res.status(502).send({message: 'upss, ada yang salah'})
+	}
+}
+
+async function fetchProfessorsByStudyID(req, res) {
+	try {
+		const professors = await getProfessorsByStudyID(req.params.prodiID)
+		res.json(professors)	
+	} catch(error) {
+		res.status(502).send({message: 'upss, ada yang salah'})
+	}
+}
+
+
+async function fetchProfessorByID(req, res, next) {
+	try {
+		const dosenData = await findProfessorByID(req.params.id)
 		res.json(dosenData)
 	} catch(error) {
 		next(error)
 	}
 }
 
-function fetchFakultasByID(req, res) {
-	getFakultasByID(req.params.id, (err, result) => {
-		if (err) {
-			return res.status(502).send({message: 'upps, ada yang salah'})
-		}
-
-		return res.send(result)
-	}) 	
-}
 
 function fetchAntrianByDosenID(req, res) {
 	getAntrianByDosenID(req.params.dosenID, (err, result) => {
@@ -100,15 +75,6 @@ function fetchAntrianByDosenID(req, res) {
 	}) 
 }
 
-function fetchGenderByID(req, res) {
-	getGenderByID(req.params.id, (err, result) => {
-		if (err) {
-			return res.status(502).json({message: 'upss, ada yang salah'})
-		}
-
-		return res.json(result[0])
-	})
-}
 
 function fetchDosenInfoByID(req, res) {
 	getDosenInfoByID(req.params.id, (err, result) => {
@@ -120,9 +86,9 @@ function fetchDosenInfoByID(req, res) {
 	})
 }
 
-async function fetchListMahasiswaByDosenID(req, res, next) {
+async function fetchListStudentsByProfessorID(req, res, next) {
 	try {
-		const listMahasiswa = await getListMahasiswa(req.params.id)
+		const listMahasiswa = await getListStudentsByProfessorID(req.params.professorID)
 		res.json(listMahasiswa)
 	} catch(error) {
 		next(error)
@@ -139,17 +105,14 @@ async function fetchMahasiswaByID(req, res, next) {
 }
 
 module.exports = {
-	fetchFakultas,
-	fetchFakultasByID,
-	fetchProdi,
-	fetchProdiByID,
+	fetchFaculties,
+	fetchStudyPrograms,
 	fetchGenders,
 	fetchUser,
-	fetchDosenByID,
-	getDosenByProdi,
+	fetchProfessorByID,
+	fetchProfessorsByStudyID,
 	fetchAntrianByDosenID,
-	fetchGenderByID,
 	fetchDosenInfoByID,
-	fetchListMahasiswaByDosenID,
+	fetchListStudentsByProfessorID,
 	fetchMahasiswaByID
 }
