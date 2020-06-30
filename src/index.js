@@ -167,11 +167,11 @@ io.on('connection', (socket) => {
 		socket.broadcast.emit('newData', antrian, profID)
 	})
 	// out from antrian
-	socket.on('outFromQueue', async ({time, id, professorID}) => {
+	socket.on('outFromQueue', async ({time, id, professorID: profID}) => {
 		await cancelBimbingan(time, id, professorID)
-		const antrian = await getAntrianByDosenID(professorID)
-		socket.emit('newData', antrian, professorID)
-		socket.broadcast.emit('newData', antrian, professorID)
+		const antrian = await getAntrianByDosenID(profID)
+		socket.emit('newData', antrian, profID)
+		socket.broadcast.emit('newData', antrian, profID)
 	})
 	// disconnect user 'aka' change status dosen: only for dosenn
 	socket.on('disconnect', async () => {
