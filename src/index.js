@@ -1,36 +1,45 @@
 const express = require('express')
-const app = express()
-const http = require('http').createServer(app)
-const io = require('socket.io')(http)
+const http = require('http')
+const socketIO = require('socket.io')
 const passport = require('passport')
-const LocalStrategy = require('passport-local').Strategy
 const bcrypt = require('bcrypt')
 const cors = require('cors')
 const expressSession = require('express-session')
-const MySQLStore = require('express-mysql-session')(expressSession)
-require('dotenv').config()
+const ExpressMysqlSession = require('express-mysql-session')
+const dotenv = require('dotenv')
+const {Strategy: LocalStrategy} = require('passport-local')
+const {connection} = require('./api/store')
+const connectionOption = require('./api/store/connectionOption')
+const {findStudentByUsername, findStudentByID} = require('./api/model/student')
 const {
-	db,
-	cancelBimbingan,
 	findProfessorByUsername,
-	findStudentByUsername,
+	updateProfessorStatus,
 	findProfessorByID,
-	findStudentByID,
-	updateStatusDosen,
-	updateAntrianStatusByMahasiswaID,
-	getAntrianByDosenID,
-	requestBimbingan,
-} = require('./api/model')
-const dbOption = require('./api/dbOption')
+} = require('./api/model/professor')
+const {
+	getQueueByProfessorID,
+	requestQueue,
+	updateQueueStatusByStudentID,
+	cancelQueue,
+} = require('./api/model/common')
 const api = require('./api')
 
-const sessionStore = new MySQLStore(dbOption, db)
+dotenv.config()
+const app = express()
+const server = http.createServer(app)
+const io = socketIO(server)
+ExpressMysqlSession(expressSession)
+const sessionStore = new ExpressMysqlSession(connectionOption, connection)
 const session = expressSession({
 	secret: process.env.SECRETKEY,
 	store: sessionStore,
 	resave: false,
 	saveUninitialized: false,
+	cookie: {
+		maxAge: 30 * 24 * 60 * 60 * 1000,
+	},
 })
+
 passport.use(
 	'professorLogin',
 	new LocalStrategy(async (username, password, done) => {
@@ -60,6 +69,7 @@ passport.use(
 		}
 	}),
 )
+
 passport.use(
 	'studentLogin',
 	new LocalStrategy(async (username, password, done) => {
@@ -75,7 +85,7 @@ passport.use(
 			const matchPassword = await bcrypt.compare(password, student.password)
 			if (!matchPassword) {
 				done(null, false, {
-					message: 'Password yang kamu masukan salah',
+					message: 'Password yang dimasukan tidak cocok',
 				})
 				return
 			}
@@ -89,29 +99,27 @@ passport.use(
 		}
 	}),
 )
+
 passport.serializeUser((user, done) => {
-	done(null, {
-		id: user.id,
-		role: user.role,
-	})
+	const {id, role} = user
+	done(null, {id, role})
 })
+
 passport.deserializeUser(async (user, done) => {
 	const {id, role} = user
+	let data
 	if (role === 'professor') {
 		const professor = await findProfessorByID(id)
-		done(null, {
-			role,
-			...professor,
-		})
+		data = {role, ...professor}
+		done(null, data)
 		return
 	}
 
 	const student = await findStudentByID(id)
-	done(null, {
-		role,
-		...student,
-	})
+	data = {role, ...student}
+	done(null, data)
 })
+
 app.use(
 	cors({
 		credentials: true,
@@ -131,57 +139,63 @@ app.use(passport.session())
 app.use('/', api)
 
 io.on('connection', (socket) => {
-	let professorID = null
-	// change dosen status: only for dosen
-	socket.on('makeMeOnline', async (id) => {
-		professorID = id
-		await updateStatusDosen(1, professorID)
-		socket.broadcast.emit('professorStatus', {id: professorID, status: 1})
-	})
-	// get queue: for all user
 	socket.on('getQueue', async (id) => {
-		const antrian = await getAntrianByDosenID(id)
+		const antrian = await getQueueByProfessorID(id)
 		socket.emit('newData', antrian, id)
 	})
-	// request bimbingan: only for mahasiswa
+
 	socket.on('requestQueue', async ({id, professorID: profID}) => {
-		await requestBimbingan(id, profID)
-		const antrian = await getAntrianByDosenID(profID)
+		await requestQueue(id, profID)
+		const antrian = await getQueueByProfessorID(profID)
 		socket.emit('newData', antrian, profID)
 		socket.broadcast.emit('newData', antrian, profID)
 	})
-	// call next queue: only for dosen
-	socket.on('nextQueue', async (previousActiveUser, nextUser, profID) => {
+
+	socket.on('outFromQueue', async ({time, id, professorID: profID}) => {
+		await cancelQueue(time, id, profID)
+		const antrian = await getQueueByProfessorID(profID)
+		socket.emit('newData', antrian, profID)
+		socket.broadcast.emit('newData', antrian, profID)
+	})
+
+	socket.on('makeMeOnline', async () => {
+		const {passport: passportSession} = socket.request.session
+		await updateProfessorStatus(1, passportSession.user.id)
+		socket.broadcast.emit('professorStatus', {
+			id: passportSession.user.id,
+			status: 1,
+		})
+	})
+
+	socket.on('nextQueue', async (previousActiveUser, nextUser) => {
+		const {passport: passportSession} = socket.request.session
+
 		if (previousActiveUser) {
 			const {id, time} = previousActiveUser
-			await updateAntrianStatusByMahasiswaID(id, time, 'completed')
+			await updateQueueStatusByStudentID(id, time, 'completed')
 		}
 
 		if (nextUser) {
 			const {id, time} = nextUser
-			await updateAntrianStatusByMahasiswaID(id, time, 'active')
+			await updateQueueStatusByStudentID(id, time, 'active')
 		}
 
-		const antrian = await getAntrianByDosenID(profID)
-		socket.emit('newData', antrian, profID)
-		socket.broadcast.emit('newData', antrian, profID)
+		const antrian = await getQueueByProfessorID(passportSession.user.id)
+		socket.emit('newData', antrian, passportSession.user.id)
+		socket.broadcast.emit('newData', antrian, passportSession.user.id)
 	})
-	// out from antrian
-	socket.on('outFromQueue', async ({time, id, professorID: profID}) => {
-		await cancelBimbingan(time, id, professorID)
-		const antrian = await getAntrianByDosenID(profID)
-		socket.emit('newData', antrian, profID)
-		socket.broadcast.emit('newData', antrian, profID)
-	})
-	// disconnect user 'aka' change status dosen: only for dosenn
+
 	socket.on('disconnect', async () => {
-		if (professorID) {
-			await updateStatusDosen(0, professorID)
-			socket.broadcast.emit('professorStatus', {id: professorID, status: 0})
+		const {passport: passportSession} = socket.request.session
+		const isProfessor = passportSession.user.role === 'professor'
+		if (isProfessor) {
+			await updateProfessorStatus(0, passportSession.user.id)
+			socket.broadcast.emit('professorStatus', {
+				id: passportSession.user.id,
+				status: 0,
+			})
 		}
 	})
 })
 
-http.listen(process.env.PORT, () => {
-	console.log(`server listen at port ${process.env.PORT}`)
-})
+server.listen(process.env.PORT || 4000)
