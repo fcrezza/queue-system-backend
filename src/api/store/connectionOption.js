@@ -1,8 +1,8 @@
 const connectionOption = {
-  host     : 'localhost',
-  user     : 'root',
-  password : 'lol001',
-  database : 'bimbingan'
+  host     : process.env.DBHOST,
+  user     : process.env.DBUSER,
+  password : process.env.DBPASSWORD,
+  database : process.env.DBNAME
 }
 
 module.exports = connectionOption

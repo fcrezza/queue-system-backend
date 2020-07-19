@@ -6,7 +6,6 @@ const bcrypt = require('bcrypt')
 const cors = require('cors')
 const expressSession = require('express-session')
 const ExpressMysqlSession = require('express-mysql-session')
-const dotenv = require('dotenv')
 const {Strategy: LocalStrategy} = require('passport-local')
 const {connection} = require('./api/store')
 const connectionOption = require('./api/store/connectionOption')
@@ -24,7 +23,6 @@ const {
 } = require('./api/model/common')
 const api = require('./api')
 
-dotenv.config()
 const app = express()
 const server = http.createServer(app)
 const io = socketIO(server)
@@ -125,7 +123,7 @@ app.use(
 		credentials: true,
 		allowedHeaders: ['sessionId', 'Content-Type'],
 		exposedHeaders: ['sessionId'],
-		origin: 'http://localhost:3000',
+		origin: process.env.ORIGIN,
 	}),
 )
 app.use(express.json())
