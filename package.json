@@ -1,16 +1,26 @@
 {
-	"name": "backend",
+	"name": "queue-backend",
 	"version": "1.0.0",
 	"description": "",
 	"main": "src/index.js",
+	"engines": {
+		"node": "^10"
+	},
 	"scripts": {
 		"start": "node --require dotenv/config src/index.js",
 		"dev": "nodemon --require dotenv/config src/index.js",
 		"format": "prettier --write '**/*.js'",
 		"lint": "eslint '**/*.js' --fix"
 	},
-	"keywords": [],
-	"author": "",
+	"keywords": [
+		"queue",
+		"fcrezza",
+		"anang fachreza"
+	],
+	"author": {
+		"name": "Anang Fachreza",
+		"email": "fachrezanang@gmail.com"
+	},
 	"license": "ISC",
 	"dependencies": {
 		"bcrypt": "^4.0.1",

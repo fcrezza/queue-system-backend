@@ -29,7 +29,8 @@ const io = socketIO(server)
 ExpressMysqlSession(expressSession)
 const sessionStore = new ExpressMysqlSession(connectionOption, connection)
 const session = expressSession({
-	secret: process.env.SECRETKEY,
+	// This is the secret used to sign the session ID cookie, use env if available
+	secret: process.env.SECRETKEY || 'a9bb2391-b347-47d0-97ac-caad0457d503',
 	store: sessionStore,
 	resave: false,
 	saveUninitialized: false,
@@ -123,7 +124,8 @@ app.use(
 		credentials: true,
 		allowedHeaders: ['sessionId', 'Content-Type'],
 		exposedHeaders: ['sessionId'],
-		origin: process.env.ORIGIN,
+		 // Configures the Access-Control-Allow-Origin CORS header, use env if available 
+		origin: process.env.ORIGIN || 'http://localhost:3000',
 	}),
 )
 app.use(express.json())
@@ -196,4 +198,8 @@ io.on('connection', (socket) => {
 	})
 })
 
-server.listen(process.env.PORT, '0.0.0.0')
+const port = process.env.PORT || 4000
+
+server.listen(port, () => {
+	console.log(`server listen on port ${port}`)
+})
