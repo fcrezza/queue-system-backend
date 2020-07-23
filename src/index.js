@@ -4,6 +4,7 @@ const socketIO = require('socket.io')
 const passport = require('passport')
 const bcrypt = require('bcrypt')
 const cors = require('cors')
+const morgan = require('morgan')
 const expressSession = require('express-session')
 const ExpressMysqlSession = require('express-mysql-session')
 const {Strategy: LocalStrategy} = require('passport-local')
@@ -35,6 +36,8 @@ const session = expressSession({
 	resave: false,
 	saveUninitialized: false,
 	cookie: {
+		sameSite: 'none',
+		secure: process.env.NODE_ENV === 'production',
 		maxAge: 30 * 24 * 60 * 60 * 1000,
 	},
 })
@@ -124,10 +127,23 @@ app.use(
 		credentials: true,
 		allowedHeaders: ['sessionId', 'Content-Type'],
 		exposedHeaders: ['sessionId'],
-		 // Configures the Access-Control-Allow-Origin CORS header, use env if available 
+		// Configures the Access-Control-Allow-Origin CORS header, use env if available
 		origin: process.env.ORIGIN || 'http://localhost:3000',
 	}),
 )
+morgan.token('sessionid', (req) => {
+	return req.sessionID
+})
+morgan.token('user', (req) => {
+	return req.session.user
+})
+
+app.use(
+	morgan(
+		':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" :user :sessionid',
+	),
+)
+
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
 app.use(session)
