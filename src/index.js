@@ -36,12 +36,12 @@ const session = expressSession({
 	resave: false,
 	saveUninitialized: false,
 	cookie: {
-		sameSite: 'none',
-		secure: process.env.NODE_ENV === 'production',
 		maxAge: 30 * 24 * 60 * 60 * 1000,
 	},
 })
 
+		// sameSite: 'none',
+		// secure: process.env.NODE_ENV === 'production',
 passport.use(
 	'professorLogin',
 	new LocalStrategy(async (username, password, done) => {
