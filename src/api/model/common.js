@@ -1,11 +1,11 @@
-const {mysql, connection} = require('../store')
+const query = require('../store')
 
 function signup(formData) {
 	const {role, ...data} = formData
 
 	if (role === 'professor') {
 		return new Promise((resolve, reject) => {
-			connection.query('insert into dosen set ?', data, (error) => {
+			query('insert into dosen set ?', data, (error) => {
 				if (error) {
 					reject(error)
 					return
@@ -17,7 +17,7 @@ function signup(formData) {
 	}
 
 	return new Promise((resolve, reject) => {
-		connection.query('insert into mahasiswa set ?', data, (error) => {
+		query('insert into mahasiswa set ?', data, (error) => {
 			if (error) {
 				reject(error)
 				return
@@ -29,11 +29,10 @@ function signup(formData) {
 }
 
 function updateQueueStatusByStudentID(id, time, status) {
-	let query =
+	const statement =
 		'update antrian set status = ? where idMahasiswa = ? and waktu = ?'
-	query = mysql.format(query, [status, id, time])
 	return new Promise((resolve, reject) => {
-		connection.query(query, (error) => {
+		query(statement, [status, id, time], (error) => {
 			if (error) {
 				reject(error)
 				return
@@ -53,7 +52,7 @@ function requestQueue(idMahasiswa, idDosen) {
 	}
 
 	return new Promise((resolve, reject) => {
-		connection.query('insert into antrian set ? ', data, (error) => {
+		query('insert into antrian set ? ', data, (error) => {
 			if (error) {
 				reject(error)
 				return
@@ -65,12 +64,11 @@ function requestQueue(idMahasiswa, idDosen) {
 }
 
 function cancelQueue(time, studentID, professorID) {
-	let query =
+	const statement =
 		'delete from antrian where idMahasiswa = ? and waktu = ? and idDosen = ?'
-	query = mysql.format(query, [studentID, time, professorID])
 
 	return new Promise((resolve, reject) => {
-		connection.query(query, (error) => {
+		query(statement, [studentID, time, professorID], (error) => {
 			if (error) {
 				reject(error)
 			}
@@ -82,7 +80,7 @@ function cancelQueue(time, studentID, professorID) {
 
 function getGenders() {
 	return new Promise((resolve, reject) => {
-		connection.query('select * from gender', (error, results) => {
+		query('select * from gender', null, (error, results) => {
 			if (error) {
 				reject(error)
 				return
@@ -95,7 +93,7 @@ function getGenders() {
 
 function getStudyPrograms() {
 	return new Promise((resolve, reject) => {
-		connection.query('select * from prodi', (error, results) => {
+		query('select * from prodi', null, (error, results) => {
 			if (error) {
 				reject(error)
 				return
@@ -108,7 +106,7 @@ function getStudyPrograms() {
 
 function getFaculties() {
 	return new Promise((resolve, reject) => {
-		connection.query('select * from fakultas', (error, results) => {
+		query('select * from fakultas', null, (error, results) => {
 			if (error) {
 				reject(error)
 				return
@@ -120,12 +118,11 @@ function getFaculties() {
 }
 
 function getQueueByProfessorID(professorID) {
-	let query =
+	const statement =
 		'select mahasiswa.id, mahasiswa.avatar, mahasiswa.namaLengkap as fullname, prodi.nama as study, antrian.status, antrian.waktu as time from antrian left join mahasiswa on mahasiswa.id = antrian.idMahasiswa left join prodi on prodi.id=mahasiswa.idProdi where antrian.idDosen = ? and antrian.status != "completed" order by antrian.waktu'
-	query = mysql.format(query, professorID)
 
 	return new Promise((resolve, reject) => {
-		connection.query(query, (error, results) => {
+		query(statement, professorID, (error, results) => {
 			if (error) {
 				reject(error)
 				return
@@ -137,11 +134,11 @@ function getQueueByProfessorID(professorID) {
 }
 
 function getProfessorsByStudyProgram(id) {
-	const query =
+	const statement =
 		'SELECT dosen.id, dosen.namaLengkap fullname, dosen.avatar, fakultas.nama as faculty from dosen left join fakultas on dosen.idFakultas = fakultas.id left join prodi on fakultas.id = prodi.idFakultas where prodi.id = ? GROUP by dosen.id'
 
 	return new Promise((resolve, reject) => {
-		connection.query(query, id, (error, results) => {
+		query(statement, id, (error, results) => {
 			if (error) {
 				reject(error)
 				return

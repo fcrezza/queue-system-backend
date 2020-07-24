@@ -137,13 +137,11 @@ morgan.token('sessionid', (req) => {
 morgan.token('user', (req) => {
 	return req.session.user
 })
-
 app.use(
 	morgan(
 		':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" :user :sessionid',
 	),
 )
-
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))
 app.use(session)

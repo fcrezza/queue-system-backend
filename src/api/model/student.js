@@ -1,11 +1,8 @@
-const {mysql, connection} = require('../store')
+const query = require('../store')
 
 function modifyStudentProfile(id, data) {
-	let query = 'update mahasiswa set ? where id = ?'
-	query = mysql.format(query, [data, id])
-
 	return new Promise((resolve, reject) => {
-		connection.query(query, (error) => {
+		query('update mahasiswa set ? where id = ?', [data, id], (error) => {
 			if (error) {
 				reject(error)
 			}
@@ -16,18 +13,25 @@ function modifyStudentProfile(id, data) {
 }
 
 function findStudentByID(id) {
-	let query =
+	const statement =
 		'select mahasiswa.id, mahasiswa.namaLengkap as fullname, mahasiswa.nim,mahasiswa.username,mahasiswa.alamat as address,mahasiswa.avatar,mahasiswa.semester, prodi.id as studyID,prodi.nama as studyName,gender.id as genderID,gender.nama as genderName, dosen.id as professorID, dosen.namaLengkap as professorName from mahasiswa left join prodi on mahasiswa.idProdi=prodi.id left join gender on gender.id=mahasiswa.idGender left join dosen on mahasiswa.idDosen = dosen.id where mahasiswa.id = ?'
-	query = mysql.format(query, id)
 
 	return new Promise((resolve, reject) => {
-		connection.query(query, (error, results) => {
+		query(statement, id, (error, results) => {
 			if (error) {
 				reject(error)
 				return
 			}
 
-			const {studyName, studyID, professorID, professorName, genderID, genderName, ...props} = results[0]
+			const {
+				studyName,
+				studyID,
+				professorID,
+				professorName,
+				genderID,
+				genderName,
+				...props
+			} = results[0]
 			const data = {
 				study: {
 					id: studyID,
@@ -39,7 +43,7 @@ function findStudentByID(id) {
 				},
 				professor: {
 					id: professorID,
-					name: professorName
+					name: professorName,
 				},
 				...props,
 			}
@@ -49,11 +53,11 @@ function findStudentByID(id) {
 }
 
 function findStudentByUsername(username) {
-	let query = 'select id, username, password from mahasiswa where username = ?'
-	query = mysql.format(query, username)
+	const statement =
+		'select id, username, password from mahasiswa where username = ?'
 
 	return new Promise((resolve, reject) => {
-		connection.query(query, (error, results) => {
+		query(statement, username, (error, results) => {
 			if (error) {
 				reject(error)
 				return
@@ -65,10 +69,10 @@ function findStudentByUsername(username) {
 }
 
 function getStudentsUsername(username) {
-	const query = 'select id, username from mahasiswa where username = ?'
+	const statement = 'select id, username from mahasiswa where username = ?'
 
 	return new Promise((resolve, reject) => {
-		connection.query(query, username, (error, results) => {
+		query(statement, username, (error, results) => {
 			if (error) {
 				reject(error)
 				return
@@ -81,7 +85,7 @@ function getStudentsUsername(username) {
 
 function getStudentsNIM(nim) {
 	return new Promise((resolve, reject) => {
-		connection.query(
+		query(
 			'select id, nim from mahasiswa where nim = ?',
 			nim,
 			(error, results) => {
@@ -97,9 +101,9 @@ function getStudentsNIM(nim) {
 }
 
 function getStudentPassword(id) {
-	const query = 'select password from mahasiswa where id = ?'
+	const statement = 'select password from mahasiswa where id = ?'
 	return new Promise((resolve, reject) => {
-		connection.query(query, id, (error, result) => {
+		query(statement, id, (error, result) => {
 			if (error) {
 				reject(error)
 			}
@@ -110,11 +114,10 @@ function getStudentPassword(id) {
 }
 
 function modifyStudentPassword({id, newPassword}) {
-	let query = 'update mahasiswa set password = ? where id = ?'
-	query = mysql.format(query, [newPassword, id])
+	const statement = 'update mahasiswa set password = ? where id = ?'
 
 	return new Promise((resolve, reject) => {
-		connection.query(query, (error) => {
+		query(statement, [newPassword, id], (error) => {
 			if (error) {
 				reject(error)
 				return
@@ -132,5 +135,5 @@ module.exports = {
 	findStudentByID,
 	getStudentsNIM,
 	getStudentPassword,
-	modifyStudentPassword
+	modifyStudentPassword,
 }

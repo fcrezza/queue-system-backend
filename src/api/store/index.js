@@ -2,27 +2,19 @@ const mysql = require('mysql')
 
 const connectionOption = require('./connectionOption')
 
-let connection
-function connectDB() {
-	connection = mysql.createConnection(connectionOption)
+const pool = mysql.createPool(connectionOption)
 
-	connection.connect((err) => {
+function query(statement, values, callback) {
+	pool.getConnection((err, connection) => {
 		if (err) {
-			console.log('error when connecting to db:', err)
-			setTimeout(connectDB, 2000)
-		}
-	})
-
-	connection.on('error', (err) => {
-		console.log('db error', err)
-		if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-			connectDB()
+			callback(err, null)
 		} else {
-			throw err
+			connection.query(statement, values, (error, results) => {
+				callback(error, results)
+			})
+			connection.release()
 		}
 	})
 }
 
-connectDB()
-
-module.exports = {connection, mysql}
+module.exports = query
