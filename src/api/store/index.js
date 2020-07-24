@@ -10,9 +10,9 @@ function query(statement, values, callback) {
 			callback(err, null)
 		} else {
 			connection.query(statement, values, (error, results) => {
+				connection.release()
 				callback(error, results)
 			})
-			connection.release()
 		}
 	})
 }

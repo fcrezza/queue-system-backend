@@ -132,10 +132,18 @@ app.use(
 	}),
 )
 morgan.token('sessionid', (req) => {
-	return req.sessionID
+	if (req.sessionID) {
+		return req.sessionID
+	}
+
+	return ''
 })
 morgan.token('user', (req) => {
-	return req.session.user
+	if (req.session) {
+		return req.session.user
+	}
+
+	return ''
 })
 app.use(
 	morgan(
