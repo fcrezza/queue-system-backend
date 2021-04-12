@@ -1,19 +1,24 @@
 {
 	"env": {
-		"browser": true,
-		"commonjs": true,
-		"es6": true
+		"es2020": true,
+		"node": true
 	},
-	"extends": ["airbnb-base", "prettier"],
-	"globals": {
-		"Atomics": "readonly",
-		"SharedArrayBuffer": "readonly"
-	},
-	"plugins": ["prettier"],
+	"extends": ["eslint:recommended", "airbnb-base", "plugin:node/recommended-module", "plugin:import/errors", "plugin:import/warnings", "prettier"],
 	"parserOptions": {
-		"ecmaVersion": 11
+		"ecmaVersion": 11,
+		"sourceType": "module"
 	},
 	"rules": {
-		"no-use-before-define": ["error", {"functions": false, "classes": true}]
+		"no-use-before-define": ["error", {"functions": false, "classes": true}],
+		"no-unused-vars": [
+			"error",
+			{
+				"vars": "all",
+				"args": "all",
+				"ignoreRestSiblings": false,
+				"argsIgnorePattern": "[request, response]"
+			}
+		],
+		"max-classes-per-file": 0
 	}
 }
