@@ -14,6 +14,10 @@ const errors = {
   NOT_FOUND: {
     status: "NOT_FOUND",
     code: 404
+  },
+  INTERNAL_SERVER_ERROR: {
+    status: "INTERNAL_SERVER_ERROR",
+    code: 500
   }
 };
 
@@ -42,6 +46,14 @@ export class HTTPForbiddenError extends Error {
 }
 
 export class HTTPUnauthorizedError extends Error {
+  constructor(message) {
+    super(message);
+    this.code = errors.UNAUTHORIZED.code;
+    this.status = errors.UNAUTHORIZED.status;
+  }
+}
+
+export class HTTPInternalServerError extends Error {
   constructor(message) {
     super(message);
     this.code = errors.UNAUTHORIZED.code;

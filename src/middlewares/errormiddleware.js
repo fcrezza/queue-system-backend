@@ -2,7 +2,8 @@ import {
   HTTPBadRequestError,
   HTTPForbiddenError,
   HTTPNotFoundError,
-  HTTPUnauthorizedError
+  HTTPUnauthorizedError,
+  HTTPInternalServerError
 } from "../utils/errors";
 
 function errorMiddleware(error, request, response, next) {
@@ -10,7 +11,8 @@ function errorMiddleware(error, request, response, next) {
     case HTTPNotFoundError:
     case HTTPBadRequestError:
     case HTTPForbiddenError:
-    case HTTPUnauthorizedError: {
+    case HTTPUnauthorizedError:
+    case HTTPInternalServerError: {
       response.status(error.code).json({
         error: {
           code: error.code,

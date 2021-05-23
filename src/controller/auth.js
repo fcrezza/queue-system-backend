@@ -1,3 +1,4 @@
+// TODO: Handle error when passport.authenticate called?
 import bcrypt from "bcrypt";
 import path from "path";
 import Joi from "joi";
@@ -30,15 +31,15 @@ export async function professorSignupController(request, response, next) {
       "string.empty": "Password tidak boleh kosong",
       "any.required": "Password tidak boleh kosong"
     }),
-    nip: Joi.string()
+    nidn: Joi.string()
       .trim()
       .pattern(/^[0-9]+$/)
       .required()
       .messages({
-        "string.base": "NIP yang dimasukan tidak valid",
-        "string.pattern.base": "NIP hanya boleh mengandung angka 0-9",
-        "string.empty": "NIP tidak boleh kosong",
-        "any.required": "NIP tidak boleh kosong"
+        "string.base": "nidn yang dimasukan tidak valid",
+        "string.pattern.base": "nidn hanya boleh mengandung angka 0-9",
+        "string.empty": "nidn tidak boleh kosong",
+        "any.required": "nidn tidak boleh kosong"
       }),
     address: Joi.string().trim().required().messages({
       "string.base": "Alamat yang dimasukan tidak valid",
@@ -60,6 +61,8 @@ export async function professorSignupController(request, response, next) {
   if (error) {
     throw new HTTPBadRequestError(error.details[0].message);
   }
+
+  request.body = input;
 
   const hashedPassword = await bcrypt.hash(input.password, 10);
   const professorAvatar = await cloudinary.uploader.upload(
@@ -97,7 +100,7 @@ export async function professorSignupController(request, response, next) {
 
       return response.json({
         id: user.id,
-        nip: user.nip,
+        nidn: user.nidn,
         fullname: user.fullname,
         email: user.email,
         address: user.address,
@@ -171,6 +174,8 @@ export async function studentSignupController(request, response, next) {
     throw new HTTPBadRequestError(error.details[0].message);
   }
 
+  request.body = input;
+
   const hashedPassword = await bcrypt.hash(input.password, 10);
   const studentAvatar = await cloudinary.uploader.upload(
     // eslint-disable-next-line
@@ -213,7 +218,7 @@ export async function studentSignupController(request, response, next) {
       connection.release();
       const professorData = {
         id: studentProfessor.id,
-        nip: studentProfessor.nip,
+        nidn: studentProfessor.nidn,
         fullname: studentProfessor.fullname,
         email: studentProfessor.email,
         address: studentProfessor.address,
@@ -245,6 +250,31 @@ export async function studentSignupController(request, response, next) {
 }
 
 export function professorLoginController(request, response, next) {
+  const inputValidation = Joi.object({
+    email: Joi.string().email().trim().required().messages({
+      "string.base": "Email yang dimasukan bukan valid string",
+      "string.email": "Email yang dimasukan tidak valid",
+      "string.empty": "Email tidak boleh kosong",
+      "any.required": "Email tidak boleh kosong"
+    }),
+    password: Joi.string().trim().min(8).required().messages({
+      "string.base": "Password yang dimasukan bukan valid string",
+      "string.min": "Password minimal mengandung 8 karakter",
+      "string.empty": "Password tidak boleh kosong",
+      "any.required": "Password tidak boleh kosong"
+    })
+  });
+
+  const {error: validationError, value: input} = inputValidation.validate(
+    request.body
+  );
+
+  if (validationError) {
+    throw new HTTPBadRequestError(validationError.details[0].message);
+  }
+
+  request.body = input;
+
   // eslint-disable-next-line
   passport.authenticate("professor", (err, user) => {
     if (err) {
@@ -266,7 +296,7 @@ export function professorLoginController(request, response, next) {
 
       return response.json({
         id: user.id,
-        nip: user.nip,
+        nidn: user.nidn,
         fullname: user.fullname,
         email: user.email,
         address: user.address,
@@ -282,8 +312,32 @@ export function professorLoginController(request, response, next) {
 }
 
 export function studentLoginController(request, response, next) {
+  const inputValidation = Joi.object({
+    email: Joi.string().email().trim().required().messages({
+      "string.base": "Email yang dimasukan bukan valid string",
+      "string.email": "Email yang dimasukan tidak valid",
+      "string.empty": "Email tidak boleh kosong",
+      "any.required": "Email tidak boleh kosong"
+    }),
+    password: Joi.string().trim().min(8).required().messages({
+      "string.base": "Password yang dimasukan bukan valid string",
+      "string.min": "Password minimal mengandung 8 karakter",
+      "string.empty": "Password tidak boleh kosong",
+      "any.required": "Password tidak boleh kosong"
+    })
+  });
+
+  const {error: validationError, value: input} = inputValidation.validate(
+    request.body
+  );
+
+  if (validationError) {
+    throw new HTTPBadRequestError(validationError.details[0].message);
+  }
+
+  request.body = input;
   // eslint-disable-next-line
-  passport.authenticate("student", (err, user) => {
+  passport.authenticate("student", async (err, user) => {
     if (err) {
       return next(err);
     }
@@ -309,7 +363,7 @@ export function studentLoginController(request, response, next) {
       const studentAvatar = await cloudinary.api.resource(user.avatar);
       const professorData = {
         id: studentProfessor.id,
-        nip: studentProfessor.nip,
+        nidn: studentProfessor.nidn,
         fullname: studentProfessor.fullname,
         email: studentProfessor.email,
         address: studentProfessor.address,
@@ -365,7 +419,7 @@ export async function authenticatedUserController(request, response) {
 
     return response.json({
       id: user.id,
-      nip: user.nip,
+      nidn: user.nidn,
       fullname: user.fullname,
       email: user.email,
       address: user.address,
@@ -393,7 +447,7 @@ export async function authenticatedUserController(request, response) {
   const studentAvatar = await cloudinary.api.resource(user.avatar);
   const professorData = {
     id: studentProfessor.id,
-    nip: studentProfessor.nip,
+    nidn: studentProfessor.nidn,
     fullname: studentProfessor.fullname,
     email: studentProfessor.email,
     address: studentProfessor.address,
