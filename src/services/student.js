@@ -3,6 +3,12 @@ class Student {
     this.connection = connection;
   }
 
+  async getAllStudents() {
+    const statement = "select * from students";
+    const [result] = await this.connection.query(statement);
+    return result;
+  }
+
   async getStudentById(data) {
     const statement = "select * from students where id = ?";
     const [[result]] = await this.connection.execute(statement, [data.id]);
@@ -12,6 +18,13 @@ class Student {
   async getStudentByEmail(data) {
     const statement = "select * from students where email = ?";
     const [[result]] = await this.connection.execute(statement, [data.email]);
+    console.log(result);
+    return result;
+  }
+
+  async getStudentByNIM(data) {
+    const statement = "select * from students where nim = ?";
+    const [[result]] = await this.connection.execute(statement, [data.nim]);
     return result;
   }
 

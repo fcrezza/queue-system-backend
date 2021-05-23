@@ -1,14 +1,16 @@
 import {Router} from "express";
 
-// import student from "./student";
-// import professor from "./professor";
-// import common from "./common";
 import auth from "./auth";
+import students from "./students";
+import professors from "./professors";
+import genders from "./genders";
+import studies from "./studies";
 
 const router = Router();
-// router.use(student);
-// router.use(professor);
-// router.use(common);
 router.use("/api/auth", auth);
+router.use("/api/students", students);
+router.use("/api/professors", professors);
+router.use("/api/studies", studies);
+router.use("/api/genders", genders);
 
 export default router;

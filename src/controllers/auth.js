@@ -5,7 +5,7 @@ import Joi from "joi";
 import {v2 as cloudinary} from "cloudinary";
 
 import passport from "../utils/passport";
-import {HTTPBadRequestError} from "../utils/errors";
+import {HTTPBadRequestError, HTTPForbiddenError} from "../utils/errors";
 import {pool} from "../services/main";
 import Student from "../services/student";
 import Professor from "../services/professor";
@@ -14,6 +14,16 @@ import Study from "../services/study";
 
 export async function professorSignupController(request, response, next) {
   const inputValidation = Joi.object({
+    nidn: Joi.string()
+      .trim()
+      .pattern(/^[0-9]+$/)
+      .required()
+      .messages({
+        "string.base": "nidn yang dimasukan tidak valid",
+        "string.pattern.base": "nidn hanya boleh mengandung angka 0-9",
+        "string.empty": "nidn tidak boleh kosong",
+        "any.required": "nidn tidak boleh kosong"
+      }),
     fullname: Joi.string().trim().required().messages({
       "string.base": "Nama lengkap yang dimasukan bukan valid string",
       "string.empty": "Nama lengkap tidak boleh kosong",
@@ -31,16 +41,6 @@ export async function professorSignupController(request, response, next) {
       "string.empty": "Password tidak boleh kosong",
       "any.required": "Password tidak boleh kosong"
     }),
-    nidn: Joi.string()
-      .trim()
-      .pattern(/^[0-9]+$/)
-      .required()
-      .messages({
-        "string.base": "nidn yang dimasukan tidak valid",
-        "string.pattern.base": "nidn hanya boleh mengandung angka 0-9",
-        "string.empty": "nidn tidak boleh kosong",
-        "any.required": "nidn tidak boleh kosong"
-      }),
     address: Joi.string().trim().required().messages({
       "string.base": "Alamat yang dimasukan tidak valid",
       "string.empty": "Alamat tidak boleh kosong",
@@ -113,6 +113,74 @@ export async function professorSignupController(request, response, next) {
       });
     });
   })(request, response, next);
+}
+
+export async function professorEmailSignupController(request, response) {
+  const inputValidation = Joi.object({
+    email: Joi.string().email().trim().required().messages({
+      "string.base": "Email yang dimasukan bukan valid string",
+      "string.email": "Email yang dimasukan tidak valid",
+      "string.empty": "Email tidak boleh kosong",
+      "any.required": "Email tidak boleh kosong"
+    })
+  });
+
+  const {error: validationError, value: input} = inputValidation.validate(
+    request.body
+  );
+
+  if (validationError) {
+    throw new HTTPBadRequestError(validationError.details[0].message);
+  }
+
+  const connection = await pool.getConnection();
+  const professorService = new Professor(connection);
+  const professor = await professorService.getProfessorByEmail(input);
+  connection.release();
+
+  if (professor) {
+    throw new HTTPForbiddenError("Alamat email ini sudah pernah digunakan");
+  }
+
+  response.json({
+    message: "Alamat email ini tersedia dan belum pernah digunakan"
+  });
+}
+
+export async function professorNIDNSignupController(request, response) {
+  const inputValidation = Joi.object({
+    nidn: Joi.string()
+      .trim()
+      .pattern(/^[0-9]+$/)
+      .required()
+      .messages({
+        "string.base": "nidn yang dimasukan tidak valid",
+        "string.pattern.base": "nidn hanya boleh mengandung angka 0-9",
+        "string.empty": "nidn tidak boleh kosong",
+        "any.required": "nidn tidak boleh kosong"
+      })
+  });
+
+  const {error: validationError, value: input} = inputValidation.validate(
+    request.body
+  );
+
+  if (validationError) {
+    throw new HTTPBadRequestError(validationError.details[0].message);
+  }
+
+  const connection = await pool.getConnection();
+  const professorService = new Professor(connection);
+  const professor = await professorService.getProfessorByNIDN(input);
+  connection.release();
+
+  if (professor) {
+    throw new HTTPForbiddenError("NIDN sudah pernah digunakan");
+  }
+
+  response.json({
+    message: "NIDN tersedia dan belum pernah digunakan"
+  });
 }
 
 export async function studentSignupController(request, response, next) {
@@ -247,6 +315,74 @@ export async function studentSignupController(request, response, next) {
       });
     });
   })(request, response, next);
+}
+
+export async function studentEmailSignupController(request, response) {
+  const inputValidation = Joi.object({
+    email: Joi.string().email().trim().required().messages({
+      "string.base": "Email yang dimasukan bukan valid string",
+      "string.email": "Email yang dimasukan tidak valid",
+      "string.empty": "Email tidak boleh kosong",
+      "any.required": "Email tidak boleh kosong"
+    })
+  });
+
+  const {error: validationError, value: input} = inputValidation.validate(
+    request.body
+  );
+
+  if (validationError) {
+    throw new HTTPBadRequestError(validationError.details[0].message);
+  }
+
+  const connection = await pool.getConnection();
+  const studentService = new Student(connection);
+  const student = await studentService.getStudentByEmail(input);
+  connection.release();
+
+  if (student) {
+    throw new HTTPForbiddenError("Alamat email ini sudah pernah digunakan");
+  }
+
+  response.json({
+    message: "Alamat email ini tersedia dan belum pernah digunakan"
+  });
+}
+
+export async function studentNIMSignupController(request, response) {
+  const inputValidation = Joi.object({
+    nim: Joi.string()
+      .trim()
+      .pattern(/^[0-9]+$/)
+      .required()
+      .messages({
+        "string.base": "NIM yang dimasukan tidak valid",
+        "string.pattern.base": "Nim hanya boleh mengandung angka 0-9",
+        "string.empty": "NIM tidak boleh kosong",
+        "any.required": "NIM tidak boleh kosong"
+      })
+  });
+
+  const {error: validationError, value: input} = inputValidation.validate(
+    request.body
+  );
+
+  if (validationError) {
+    throw new HTTPBadRequestError(validationError.details[0].message);
+  }
+
+  const connection = await pool.getConnection();
+  const studentService = new Student(connection);
+  const student = await studentService.getStudentByNIM(input);
+  connection.release();
+
+  if (student) {
+    throw new HTTPForbiddenError("NIM sudah pernah digunakan");
+  }
+
+  response.json({
+    message: "NIM tersedia dan belum pernah digunakan"
+  });
 }
 
 export function professorLoginController(request, response, next) {
